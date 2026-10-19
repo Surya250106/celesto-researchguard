@@ -1,0 +1,7 @@
+{
+  "failed_step": 7,
+  "total_steps": 10,
+  "policy": "fresh",
+  "rationale": "The 'fresh' recovery policy was chosen over snapshot rollback or guest repair for Step 7 artifact verification failures because when an in-guest artifact fails cryptographic checksum validation or exhibits corrupt state, the integrity of the entire guest runtime is suspect. Attempting in-place repairs risks compounding silent defects. By terminating and purging the compromised guest and booting a fresh sandbox from an immutable base template, the agent guarantees deterministic reproduction, clean memory state, zero residual state pollution, and strict audit compliance.",
+  "trace_path": "reports/failure_trace.jsonl"
+}

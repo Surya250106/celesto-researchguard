@@ -1,0 +1,9 @@
+{
+  "attack": "destructive_command",
+  "blocked": true,
+  "host_untouched": true,
+  "evidence_paths": [
+    "reports/evidence/containment_audit.json",
+    "reports/evidence/host_verification.txt"
+  ]
+}

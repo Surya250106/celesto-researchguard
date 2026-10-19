@@ -1,0 +1,11 @@
+{
+  "capability": "browser",
+  "implementation_target": "celesto.sdk.Computer.browser",
+  "description": "Integration with Celesto sandboxed browser CDP connection for bounded document and web research",
+  "verification_status": "verified",
+  "features": [
+    "Headless browser runtime isolated inside microVM",
+    "CDP WebSocket endpoint provisioned per sandbox",
+    "Zero host-network exposure during web exploration"
+  ]
+}

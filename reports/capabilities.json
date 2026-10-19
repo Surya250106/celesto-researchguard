@@ -1,0 +1,19 @@
+{
+  "capabilities": [
+    {
+      "id": "browser",
+      "rationale": "The sandboxed browser runtime allows autonomous agents to safely access and extract live web documentation without exposing the trusted control plane or host operating system to malicious payloads, drive-by downloads, or SSRF attacks.",
+      "evidence_path": "reports/evidence/capability_browser_evidence.json"
+    },
+    {
+      "id": "safety_hooks",
+      "rationale": "Celesto pre-execution safety callbacks intercept every command before guest dispatch, enforcing deterministic deny rules against filesystem destruction and secret exfiltration rather than relying solely on probabilistic model prompts.",
+      "evidence_path": "reports/evidence/capability_safety_hooks_evidence.json"
+    },
+    {
+      "id": "network_policy",
+      "rationale": "Strict network boundary policies restrict outbound egress to permitted public research domains and documentation endpoints, preventing agent lateral movement or unauthorized command-and-control communication.",
+      "evidence_path": "reports/evidence/capability_network_policy_evidence.json"
+    }
+  ]
+}

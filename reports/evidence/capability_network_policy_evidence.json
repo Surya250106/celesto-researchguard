@@ -1,0 +1,8 @@
+{
+  "capability": "network_policy",
+  "implementation_target": "app.agent.ResearchAgent.validate_network_policy",
+  "description": "Network boundary enforcement restricting guest HTTP requests to explicit allowlisted research domains",
+  "verification_status": "verified",
+  "permitted_schemes": ["http", "https"],
+  "enforcement_point": "pre-dispatch inspection"
+}

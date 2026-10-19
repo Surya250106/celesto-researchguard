@@ -1,0 +1,7 @@
+{
+  "project_name": "Celesto ResearchGuard",
+  "who_has_problem": "Security-conscious AI engineering teams, autonomous agent operators, and enterprise researchers who need AI agents to conduct real-world web research, browse public documentation, and run code without risking host system compromise, credential theft, network pivot attacks, or runaway destructive commands.",
+  "what_agent_does": "Celesto ResearchGuard orchestrates bounded, sandboxed autonomous research agents inside disposable Celesto microVM computers. It enforces pre-execution safety inspection via Celesto Callbacks to veto destructive operations and secret exfiltration before commands reach the guest, leverages the isolated guest browser for bounded web exploration, produces cryptographically verified Markdown research artifacts inside the guest, records every state transition in a PostgreSQL run ledger, and implements a deterministic fresh-boot recovery policy upon step-level failures.",
+  "proof_of_work": "The system produces an in-guest sourced Markdown research report verified via cryptographic SHA-256 checksum, a tamper-evident structured JSONL command audit log in logs/commands.jsonl recording all allow and block decisions, automated containment test evidence demonstrating blocked destructive actions with host file integrity preserved, and an idempotent PostgreSQL run ledger capturing full microVM lifecycle states.",
+  "idea_source": "original"
+}

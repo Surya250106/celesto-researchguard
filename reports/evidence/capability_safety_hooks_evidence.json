@@ -1,0 +1,12 @@
+{
+  "capability": "safety_hooks",
+  "implementation_target": "celesto.callbacks.Callback.on_pre_run",
+  "description": "Pre-execution command safety policy intercepting commands before guest VM execution",
+  "verification_status": "verified",
+  "intercepted_vectors": [
+    "Filesystem destruction (rm -rf /, mkfs, dd)",
+    "Privileged credential exfiltration (/etc/shadow, ~/.ssh)",
+    "Fork bombs and kernel denial of service",
+    "Outbound reverse shells and secret leaking"
+  ]
+}

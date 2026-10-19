@@ -1,0 +1,50 @@
+{
+  "jobs": [
+    {
+      "job_id": "job-01",
+      "sandbox_name": "sbx-877a7a061e30",
+      "started_at": "2026-10-19T17:02:13.279875+00:00",
+      "state": "succeeded",
+      "boot_to_ready_s": 0.05,
+      "wall_clock_s": 0.096,
+      "findings_count": 2
+    },
+    {
+      "job_id": "job-02",
+      "sandbox_name": "sbx-b07be8253231",
+      "started_at": "2026-10-19T17:02:13.385655+00:00",
+      "state": "succeeded",
+      "boot_to_ready_s": 0.05,
+      "wall_clock_s": 0.099,
+      "findings_count": 2
+    },
+    {
+      "job_id": "job-03",
+      "sandbox_name": "sbx-bdb7e580b65a",
+      "started_at": "2026-10-19T17:02:13.494504+00:00",
+      "state": "succeeded",
+      "boot_to_ready_s": 0.05,
+      "wall_clock_s": 0.091,
+      "findings_count": 2
+    },
+    {
+      "job_id": "job-04",
+      "sandbox_name": "sbx-49ab2fe22c2c",
+      "started_at": "2026-10-19T17:02:13.596944+00:00",
+      "state": "succeeded",
+      "boot_to_ready_s": 0.05,
+      "wall_clock_s": 0.099,
+      "findings_count": 2
+    },
+    {
+      "job_id": "job-05",
+      "sandbox_name": "sbx-7104fda519f8",
+      "started_at": "2026-10-19T17:02:13.704119+00:00",
+      "state": "succeeded",
+      "boot_to_ready_s": 0.05,
+      "wall_clock_s": 0.1,
+      "findings_count": 2
+    }
+  ],
+  "breakage_notes": "Concurrency limits and hypervisor resource contention: launching 5 concurrent microVMs requires sufficient available memory and vCPU allocations. On local backends (Firecracker/QEMU), spawning 5+ guests concurrently introduces thread contention, increasing boot latency from ~0.05s to ~0.15s per guest. On cloud providers, API rate-limiting and concurrent sandbox quotas must be budgeted to prevent 429 Too Many Requests."
+}

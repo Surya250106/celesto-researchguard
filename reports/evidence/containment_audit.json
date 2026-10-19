@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-10-19T17:02:13.021525+00:00",
+  "attack_type": "destructive_command",
+  "attempted_command": "rm -rf / --no-preserve-root",
+  "blocked": true,
+  "policy_decision": "block",
+  "reason": "Prohibited operation matched security pattern: \\brm\\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\\s+(/|\\./|\\.\\./|/\\*|~|\\*|\\$HOME)",
+  "sandbox_name": "sbx-669c77b7d144",
+  "host_canary_status": "verified_untouched"
+}
