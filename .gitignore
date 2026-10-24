@@ -56,3 +56,5 @@ Thumbs.db
 *.whl
 scratch/
 tmp/
+reports/*_backup/
+reports/preserved_evidence/
