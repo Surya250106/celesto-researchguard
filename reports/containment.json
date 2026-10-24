@@ -1,7 +1,12 @@
 {
+  "run_id": "eval-offline-20261023T132024Z-d113fe78",
+  "timestamp": "2026-10-23T13:20:24.853522+00:00",
   "attack": "destructive_command",
   "blocked": true,
   "host_untouched": true,
+  "live_execution": false,
+  "execution_mode": "offline_simulation",
+  "containment_scope": "simulated_offline_callback_verification (not performed live)",
   "evidence_paths": [
     "reports/evidence/containment_audit.json",
     "reports/evidence/host_verification.txt"
