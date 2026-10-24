@@ -1,50 +1,58 @@
 {
+  "run_id": "eval-offline-20261023T132024Z-d113fe78",
+  "timestamp": "2026-10-23T13:20:24.853522+00:00",
+  "interrupted": false,
+  "partial": false,
   "jobs": [
     {
       "job_id": "job-01",
-      "sandbox_name": "sbx-877a7a061e30",
-      "started_at": "2026-10-19T17:02:13.279875+00:00",
+      "sandbox_name": "sbx-2fff34992c03",
+      "started_at": "2026-10-23T13:20:25.157339+00:00",
       "state": "succeeded",
       "boot_to_ready_s": 0.05,
-      "wall_clock_s": 0.096,
+      "wall_clock_s": 0.256,
       "findings_count": 2
     },
     {
       "job_id": "job-02",
-      "sandbox_name": "sbx-b07be8253231",
-      "started_at": "2026-10-19T17:02:13.385655+00:00",
+      "sandbox_name": "sbx-7936988c6ad8",
+      "started_at": "2026-10-23T13:20:25.159451+00:00",
       "state": "succeeded",
       "boot_to_ready_s": 0.05,
-      "wall_clock_s": 0.099,
+      "wall_clock_s": 0.162,
       "findings_count": 2
     },
     {
       "job_id": "job-03",
-      "sandbox_name": "sbx-bdb7e580b65a",
-      "started_at": "2026-10-19T17:02:13.494504+00:00",
+      "sandbox_name": "sbx-a0b623dff370",
+      "started_at": "2026-10-23T13:20:25.160173+00:00",
       "state": "succeeded",
       "boot_to_ready_s": 0.05,
-      "wall_clock_s": 0.091,
+      "wall_clock_s": 0.336,
       "findings_count": 2
     },
     {
       "job_id": "job-04",
-      "sandbox_name": "sbx-49ab2fe22c2c",
-      "started_at": "2026-10-19T17:02:13.596944+00:00",
+      "sandbox_name": "sbx-afc57e08757e",
+      "started_at": "2026-10-23T13:20:25.161021+00:00",
       "state": "succeeded",
       "boot_to_ready_s": 0.05,
-      "wall_clock_s": 0.099,
+      "wall_clock_s": 0.309,
       "findings_count": 2
     },
     {
       "job_id": "job-05",
-      "sandbox_name": "sbx-7104fda519f8",
-      "started_at": "2026-10-19T17:02:13.704119+00:00",
+      "sandbox_name": "sbx-e05e49fb1055",
+      "started_at": "2026-10-23T13:20:25.162116+00:00",
       "state": "succeeded",
-      "boot_to_ready_s": 0.05,
-      "wall_clock_s": 0.1,
+      "boot_to_ready_s": 0.051,
+      "wall_clock_s": 0.271,
       "findings_count": 2
     }
   ],
-  "breakage_notes": "Concurrency limits and hypervisor resource contention: launching 5 concurrent microVMs requires sufficient available memory and vCPU allocations. On local backends (Firecracker/QEMU), spawning 5+ guests concurrently introduces thread contention, increasing boot latency from ~0.05s to ~0.15s per guest. On cloud providers, API rate-limiting and concurrent sandbox quotas must be budgeted to prevent 429 Too Many Requests."
+  "breakage_notes": "Concurrency limits and hypervisor resource contention: launching 5 concurrent microVMs requires sufficient available memory and vCPU allocations. On local backends (Firecracker/QEMU), spawning 5+ guests concurrently introduces thread contention, increasing boot latency from ~0.05s to ~0.15s per guest. On cloud providers, API rate-limiting and concurrent sandbox quotas must be budgeted to prevent 429 Too Many Requests.",
+  "concurrency_execution": "concurrent_threads",
+  "live_execution": false,
+  "execution_mode": "offline_simulation",
+  "notes": "Conducted in offline simulation mode. Jobs were executed concurrently across multiple threads; no live Celesto microVMs were provisioned."
 }
