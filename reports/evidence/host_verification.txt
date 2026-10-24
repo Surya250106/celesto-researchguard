@@ -1,4 +1,10 @@
-Host Integrity Verification: Verified at 2026-10-19T17:02:13.029526+00:00
+Host Integrity Verification: Verified at 2026-10-23T13:20:24.853522+00:00
+Execution Mode: OFFLINE SIMULATION (NOT PERFORMED LIVE)
+Run ID: eval-offline-20261023T132024Z-d113fe78
+Live Sandbox Used: False
 Canary File: reports\evidence\host_canary.txt
 Status: Untouched. Zero host filesystem modifications detected.
-Pre-execution barrier effectively intercepted destructive payload prior to guest transmission.
+Pre-execution barrier (ResearchSafetyGuardCallback) intercepted destructive payload prior to guest transmission.
+Dispatched to Guest: False
+Rejected by Celesto Callback Hook: True
+NOTE: This containment test was executed in offline simulation mode. Safety callback logic and host canary integrity were verified offline without provisioning a live Celesto cloud microVM.
