@@ -75,7 +75,10 @@ class SandboxManager:
             if simulate_offline is not None
             else os.environ.get("MOCK_SANDBOX_FOR_OFFLINE_TESTS", "false").lower() == "true"
         )
-        self.safety_guard = ResearchSafetyGuardCallback(self.sandbox_name)
+        self.safety_guard = ResearchSafetyGuardCallback(
+            self.sandbox_name,
+            live_execution=not self.simulate_offline,
+        )
 
         self.computer: Any = None
         self.boot_to_ready_s: Optional[float] = None
@@ -83,6 +86,8 @@ class SandboxManager:
         self.ready_at_mono: Optional[float] = None
         self._is_ready: bool = False
         self._is_deleted: bool = False
+        self._cleanup_succeeded: Optional[bool] = None
+        self.browser_error: Optional[str] = None
 
     def start(self) -> float:
         """Provision the Celesto sandbox, probe readiness, and measure boot time."""
@@ -99,18 +104,28 @@ class SandboxManager:
             return self.boot_to_ready_s
 
         # Real Celesto execution path
-        api_key = os.environ.get("CELESTO_API_KEY")
-        if self.provider == "cloud" and not api_key:
+        api_key = os.environ.get("CELESTO_API_KEY", "").strip()
+        if self.provider == "cloud" and (not api_key or api_key == "your_celesto_api_key_here"):
             raise CelestoCredentialsMissingError(
-                "Cannot boot live Celesto cloud sandbox: CELESTO_API_KEY environment variable is not configured. "
-                "Configure your API key in .env or provide it via environment variables."
+                "Cannot boot live Celesto cloud sandbox: CELESTO_API_KEY environment variable is not configured "
+                "or contains a placeholder. Configure your API key in .env or provide it via environment variables."
             )
+        if self.provider == "local" and os.name == "nt":
+            raise CelestoError(
+                "Local microVM provider is not supported directly on Windows hosts (requires Linux with KVM/QEMU). "
+                "Use provider='cloud' with a valid CELESTO_API_KEY, or run inside the Linux Docker container."
+            )
+        if self.provider not in ("cloud", "local"):
+            raise CelestoError(f"Unsupported Celesto provider '{self.provider}'. Allowed providers: 'cloud', 'local'.")
 
         from celesto import Computer
 
         try:
-            # Pass template_id="scratch" or default guest options
-            options: dict[str, Any] = {"provider": self.provider}
+            # Pass template_id or default guest options with ephemeral lifetime
+            options: dict[str, Any] = {"provider": self.provider, "lifetime": "ephemeral"}
+            template_id = os.environ.get("CELESTO_TEMPLATE_ID")
+            if template_id:
+                options["template_id"] = template_id
             if self.provider == "cloud" and api_key:
                 options["api_key"] = api_key
 
@@ -119,6 +134,9 @@ class SandboxManager:
                 options["backend"] = backend
 
             self.computer = Computer(**options)
+            self.computer.start()
+            computer_id = getattr(self.computer, "id", None)
+            logger.info("Celesto cloud computer provisioned (id=%s)...", computer_id)
 
             # Readiness probe: execute minimal command inside guest to verify SSH/guest readiness
             probe_start = time.monotonic()
@@ -131,7 +149,7 @@ class SandboxManager:
             self.ready_at_mono = time.monotonic()
             self.boot_to_ready_s = round(self.ready_at_mono - self.created_at_mono, 3)
             self._is_ready = True
-            logger.info("Celesto computer '%s' ready in %.3fs", self.sandbox_name, self.boot_to_ready_s)
+            logger.info("Celesto computer '%s' (id=%s) ready in %.3fs", self.sandbox_name, computer_id, self.boot_to_ready_s)
             return self.boot_to_ready_s
 
         except Exception as e:
@@ -215,12 +233,31 @@ class SandboxManager:
         return res.stdout.strip().split()[0]
 
     def get_browser_connection(self) -> Any:
-        """Access the Celesto sandboxed browser connection (CDP WebSocket endpoint)."""
+        """Access the Celesto sandboxed browser connection (CDP WebSocket endpoint).
+
+        If the cloud API returns HTTP 501 (Not Implemented) because the cloud template
+        or account tier does not support the browser gateway, this is clearly reported
+        rather than guessing or silently fabricating a connection.
+        """
         if self.simulate_offline:
             return {"ws_url": "ws://127.0.0.1:9222/devtools/browser/simulated"}
         if not self.computer:
             raise CelestoError("Sandbox is not running.")
-        return self.computer.browser()
+        try:
+            return self.computer.browser()
+        except Exception as e:
+            self.browser_error = str(e)
+            if "501" in str(e) or "Not Implemented" in str(e):
+                logger.warning(
+                    "Cloud browser endpoint returned HTTP 501 (Not Implemented) for sandbox '%s'. "
+                    "The current template (%s) or cloud tier does not provide a CDP browser gateway. "
+                    "Compliant alternative: using verified in-guest network command execution.",
+                    self.sandbox_name,
+                    os.environ.get("CELESTO_TEMPLATE_ID", "default"),
+                )
+            else:
+                logger.warning("Browser connection endpoint unavailable on sandbox '%s': %s", self.sandbox_name, e)
+            return None
 
     def cleanup(self) -> None:
         """Clean up and delete the Celesto computer instance.
@@ -234,9 +271,13 @@ class SandboxManager:
         if self.computer is not None and not self.simulate_offline:
             try:
                 self.computer.delete()
+                self._cleanup_succeeded = True
             except Exception as e:
+                self._cleanup_succeeded = False
                 cleanup_error = e
                 logger.error("Error during Celesto computer cleanup for '%s': %s", self.sandbox_name, e)
+        else:
+            self._cleanup_succeeded = True
 
         self._is_deleted = True
         self._is_ready = False
