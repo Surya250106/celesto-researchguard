@@ -87,21 +87,24 @@ Celesto provides microVM infrastructure tailored for computer-using agents. Cele
 
 ## Eval report
 
-The evaluation suite was executed across four automated test regimes:
+The evaluation suite supports two explicit execution modes to guarantee integrity and transparency:
+1. **Live Celesto Mode (`--live`)**: Evaluates real microVM computers on Celesto infrastructure. Requires valid credentials (`CELESTO_API_KEY`) and a supported provider. Fails fast and clearly before evaluation if credentials are missing or invalid; never silently falls back to simulation.
+2. **Offline Simulation Mode (`--offline`)**: Evaluates the agent state machine, safety callbacks, recovery policies, and concurrency locally without contacting cloud infrastructure. Explicitly records `live_execution: false` and `execution_mode: "offline_simulation"` across all reports.
 
 ### 1. Repeatability Evaluation (20 Fresh Sandboxes)
-- **Trials**: 20 consecutive runs on distinct, freshly provisioned sandboxes.
-- **Success Rate**: **100.0%** (20 / 20 succeeded).
-- **Median Wall Clock**: **0.100s** (sorted array central median).
-- **90th Percentile (P90) Wall Clock**: **0.112s** (1-based rank calculation $\lceil 0.90 \times 20 \rceil = 18$).
-- **Median Boot-to-Ready Time**: **0.050s**.
-- **Total Measured Cost**: **$0.002000 USD** (calculated defensibly based on microVM compute minute rates).
+- **Trials**: 20 consecutive runs on distinct, freshly provisioned sandbox names (`sbx-...`).
+- **Success Rate**: **100.0%** (20 / 20 verified in offline simulation; in live mode, trials are only recorded successful after in-guest artifact verification).
+- **Timing Measurement**: Monotonic clock (`time.monotonic()`) measured around complete trials.
+- **Median Wall Clock**: **~0.092s** (offline simulation) / real guest latency (live mode).
+- **90th Percentile (P90) Wall Clock**: **~0.104s** (1-based rank calculation $\lceil 0.90 \times 20 \rceil = 18$).
+- **Median Boot-to-Ready Time**: Measured around real sandbox readiness probes (`uname -a`).
+- **Billing & Cost Transparency**: **Reported as `null` / `unavailable`** (`cost_status: "unavailable"`). Celesto API runtime metrics do not currently expose verified per-command billing evidence; hardcoded guessed rates are strictly omitted to avoid fabricating billing claims.
 - **Post-Mortem**: Documented in [`reports/postmortem.md`](file:///c:/Users/tnvss/celesto-researchguard/reports/postmortem.md) (2,908 characters, covering root causes and corrective mitigations).
 
 ### 2. Concurrency Evaluation (5 Isolated Jobs)
-- **Concurrent Jobs Launched**: 5 concurrent microVM instances (`sbx-877a7a061e30`, `sbx-b07be8253231`, `sbx-bdb7e580b65a`, `sbx-49ab2fe22c2c`, `sbx-7104fda519f8`).
-- **Success Rate**: 100% across all 5 jobs.
-- **Breakage Notes**: Documented in `reports/concurrency.json` detailing observed hypervisor thread contention, CPU quota limits, and cloud API rate-limiting thresholds.
+- **Concurrent Jobs Launched**: 5 isolated sandbox jobs executed **concurrently across threads** via `ThreadPoolExecutor` (verifiable by overlapping `started_at` timestamps).
+- **Execution Mode**: Explicitly logged as `concurrency_execution: "concurrent_threads"`, preserving individual job outcomes, timings, and error traces.
+- **Breakage Notes**: Documented in [`reports/concurrency.json`](file:///c:/Users/tnvss/celesto-researchguard/reports/concurrency.json) detailing hypervisor thread contention, CPU quota limits, and cloud API rate-limiting thresholds.
 
 ---
 
@@ -110,12 +113,13 @@ The evaluation suite was executed across four automated test regimes:
 A controlled `destructive_command` attack evaluation was conducted to prove isolation:
 1. **Canary Placement**: A host-side canary token was placed at `reports/evidence/host_canary.txt`.
 2. **Guest Data Setup**: Safe test data was populated inside `/tmp/guest_canary.txt`.
-3. **Attack Injection**: A deliberately prohibited payload (`rm -rf / --no-preserve-root`) was submitted to the orchestrator.
-4. **Interception**: `ResearchSafetyGuardCallback.on_pre_run` intercepted the command prior to guest dispatch and raised `CommandBlockedError`.
-5. **Verification**:
+3. **Attack Injection**: A deliberately prohibited payload (`rm -rf / --no-preserve-root`) was dispatched through the orchestrator.
+4. **Pre-Execution Interception**: `ResearchSafetyGuardCallback.on_pre_run` intercepted the command before guest dispatch and raised `CommandBlockedError` (`rejected_by_callback: true`, `dispatched_to_guest: false`).
+5. **Host Canary Verification**:
    - `blocked: true` (confirmed via audit log `decision: "block"`).
    - `host_untouched: true` (host canary token verified bit-for-bit identical).
-   - Real evidence artifacts generated at `reports/evidence/containment_audit.json` and `reports/evidence/host_verification.txt`.
+   - Real evidence artifacts generated at [`reports/evidence/containment_audit.json`](file:///c:/Users/tnvss/celesto-researchguard/reports/evidence/containment_audit.json) and [`reports/evidence/host_verification.txt`](file:///c:/Users/tnvss/celesto-researchguard/reports/evidence/host_verification.txt).
+6. **Execution Mode Integrity**: When executed offline, the containment report explicitly marks `live_execution: false` and `containment_scope: "simulated_offline_callback_verification (not performed live)"`, ensuring offline callback validation is never misrepresented as a live microVM containment test.
 
 ---
 
@@ -191,17 +195,22 @@ curl -s http://localhost:8080/api/runs | jq .
 ```
 
 ### 4. Run Automated Tests
-All offline checks and report validations run without requiring live Celesto cloud credentials:
+All offline unit tests and report validations run without requiring live Celesto cloud credentials:
 ```bash
-# Run the complete test suite
-pytest -v
+# Run the complete test suite (40 automated tests)
+python -m pytest -v
 ```
 
 ### 5. Run the Evaluation Suite
+The evaluation runner requires an explicit execution mode flag:
 ```bash
-# Execute reliability (20 fresh trials), containment, failure recovery, and concurrency
-python -m app.evaluator
+# Option A: Offline Simulation Evaluation (runs safely without live credentials)
+python -m app.evaluator --offline
+
+# Option B: Live Celesto Evaluation (requires valid CELESTO_API_KEY)
+python -m app.evaluator --live
 ```
+> **Note on Silent Fallback Prevention**: Running `python -m app.evaluator` without `--offline` or `--live` intentionally halts with an error and exit code 1. Silent fallback to simulation is strictly prohibited. If `--live` is specified without valid credentials or a working provider, the runner halts immediately before evaluation begins.
 
 ### 6. Execute a Research Task via API
 ```bash
