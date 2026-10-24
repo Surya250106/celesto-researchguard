@@ -42,8 +42,11 @@ services:
       ledger:
         condition: service_healthy
     volumes:
+      - ./app:/app/app
+      - ./tests:/app/tests
       - ./reports:/app/reports
       - ./logs:/app/logs
+      - ./scripts:/app/scripts
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
       interval: 5s
