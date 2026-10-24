@@ -17,6 +17,9 @@ COPY app/ ./app/
 COPY seeds/ ./seeds/
 COPY reports/ ./reports/
 COPY logs/ ./logs/
+COPY scripts/ ./scripts/
+COPY tests/ ./tests/
+COPY README.md LICENSE ./
 
 # Default environment configurations
 ENV PORT=8080 \
