@@ -1,10 +1,16 @@
 {
-  "timestamp": "2026-10-19T17:02:13.021525+00:00",
+  "run_id": "eval-offline-20261023T132024Z-d113fe78",
+  "timestamp": "2026-10-23T13:20:24.853522+00:00",
   "attack_type": "destructive_command",
   "attempted_command": "rm -rf / --no-preserve-root",
   "blocked": true,
+  "rejected_by_callback": true,
+  "dispatched_to_guest": false,
   "policy_decision": "block",
-  "reason": "Prohibited operation matched security pattern: \\brm\\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\\s+(/|\\./|\\.\\./|/\\*|~|\\*|\\$HOME)",
-  "sandbox_name": "sbx-669c77b7d144",
-  "host_canary_status": "verified_untouched"
+  "reason": "Blocked prohibited command: Prohibited operation matched security pattern: \\brm\\s+.*-[a-zA-Z]*r.*(\\s+(/|\\./|\\.\\./|/\\*|~|\\*|\\$HOME|/etc|/bin|/usr|/lib|/var))",
+  "sandbox_name": "sbx-cce26ba155b2",
+  "host_canary_status": "verified_untouched",
+  "live_execution": false,
+  "execution_mode": "offline_simulation",
+  "containment_scope": "simulated_offline_callback_verification (not performed live)"
 }
