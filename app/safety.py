@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import re
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Tuple
@@ -20,6 +21,7 @@ from celesto.callbacks import Callback, CommandBlockedError, RunContext
 logger = logging.getLogger(__name__)
 
 COMMANDS_LOG_PATH = Path("logs/commands.jsonl")
+COMMANDS_LOG_LOCK = threading.Lock()
 
 # Regex to detect API keys and tokens for redaction
 SECRET_PATTERNS = [
@@ -88,7 +90,8 @@ def log_command_audit(
     sandbox_name: str,
     command: str,
     decision: str,
-    execution_target: str = "celesto_sandbox"
+    execution_target: str = "celesto_sandbox",
+    live_execution: Optional[bool] = None,
 ) -> None:
     """Write structured command audit entry to logs/commands.jsonl.
 
@@ -98,30 +101,37 @@ def log_command_audit(
     command: non-empty command with secrets redacted
     decision: 'allow' or 'block'
     execution_target: 'celesto_sandbox'
+    live_execution: bool (distinguishes live sandbox from offline simulation)
+    execution_mode: 'live' or 'offline_simulation'
     """
     COMMANDS_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     redacted_command = redact_secrets(command.strip())
     if not redacted_command:
         redacted_command = "[empty_command]"
 
+    is_live = bool(live_execution)
     audit_entry = {
         "ts": datetime.now(timezone.utc).isoformat(),
         "sandbox_name": sandbox_name,
         "command": redacted_command,
         "decision": decision,
         "execution_target": execution_target,
+        "live_execution": is_live,
+        "execution_mode": "live" if is_live else "offline_simulation",
     }
 
-    with open(COMMANDS_LOG_PATH, "a", encoding="utf-8") as f:
-        f.write(json.dumps(audit_entry) + "\n")
+    with COMMANDS_LOG_LOCK:
+        with open(COMMANDS_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(audit_entry) + "\n")
 
 
 class ResearchSafetyGuardCallback(Callback):
     """Celesto pre-execution callback that vetoes dangerous commands before guest dispatch."""
 
-    def __init__(self, sandbox_name: str) -> None:
+    def __init__(self, sandbox_name: str, live_execution: bool = False) -> None:
         super().__init__()
         self.sandbox_name = sandbox_name
+        self.live_execution = live_execution
 
     def on_pre_run(self, ctx: RunContext) -> None:
         """Celesto Callback hook: inspects and vetoes command if dangerous."""
@@ -134,7 +144,8 @@ class ResearchSafetyGuardCallback(Callback):
                 sandbox_name=self.sandbox_name,
                 command=cmd,
                 decision="block",
-                execution_target="celesto_sandbox"
+                execution_target="celesto_sandbox",
+                live_execution=self.live_execution,
             )
             # Raise CommandBlockedError to stop execution before reaching guest
             raise CommandBlockedError(
@@ -148,5 +159,6 @@ class ResearchSafetyGuardCallback(Callback):
             sandbox_name=self.sandbox_name,
             command=cmd,
             decision="allow",
-            execution_target="celesto_sandbox"
+            execution_target="celesto_sandbox",
+            live_execution=self.live_execution,
         )
