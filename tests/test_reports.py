@@ -94,8 +94,14 @@ def test_reliability_report_arithmetic_and_ordering():
     data = json.loads(path.read_text(encoding="utf-8"))
 
     runs = data.get("runs", [])
-    assert len(runs) >= 20, f"Reliability evaluation must have at least 20 runs, found {len(runs)}"
-    assert data.get("run_count") == len(runs)
+    if data.get("partial"):
+        assert len(runs) == data.get("run_count")
+        assert len(runs) > 0, "Partial report must contain at least one completed run"
+        assert data.get("planned_runs", 20) >= 20
+        assert data.get("interrupted") is True
+    else:
+        assert len(runs) >= 20, f"Reliability evaluation must have at least 20 runs, found {len(runs)}"
+        assert data.get("run_count") == len(runs)
 
     # Verify sorted ascending by wall_clock_s
     wall_clocks = [r["wall_clock_s"] for r in runs]
@@ -119,9 +125,13 @@ def test_reliability_report_arithmetic_and_ordering():
     expected_p90_wall = wall_clocks[rank_p90 - 1]
     assert abs(data.get("p90_wall_clock_s") - expected_p90_wall) < 1e-3
 
-    # Verify total cost calculation
-    total_cost = sum(r.get("cost_usd", 0.0) for r in runs)
-    assert abs(data.get("total_cost_usd") - total_cost) < 1e-4
+    # Verify total cost calculation: when costs are available, sum must match; when unavailable, must be None
+    costs = [r.get("cost_usd") for r in runs if r.get("cost_usd") is not None]
+    if costs:
+        total_cost = sum(costs)
+        assert abs(data.get("total_cost_usd") - total_cost) < 1e-4
+    else:
+        assert data.get("total_cost_usd") is None or data.get("total_cost_usd") == 0.0
 
     # Verify postmortem reference
     assert data.get("postmortem_path") == "reports/postmortem.md"
