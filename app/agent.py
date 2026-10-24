@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,6 +29,7 @@ from app.schemas import RunState
 logger = logging.getLogger(__name__)
 
 FAILURE_TRACE_PATH = Path("reports/failure_trace.jsonl")
+FAILURE_TRACE_LOCK = threading.Lock()
 
 
 def record_failure_trace_event(
@@ -38,15 +40,19 @@ def record_failure_trace_event(
     policy: Optional[str] = None,
     details: Optional[str] = None,
     error: Optional[str] = None,
+    live_execution: Optional[bool] = None,
 ) -> None:
     """Record recovery and failure events to reports/failure_trace.jsonl."""
     FAILURE_TRACE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    is_live = bool(live_execution)
     entry = {
         "ts": datetime.now(timezone.utc).isoformat(),
         "sandbox_name": sandbox_name,
         "step": step,
         "total_steps": total_steps,
         "event": event,
+        "live_execution": is_live,
+        "execution_mode": "live" if is_live else "offline_simulation",
     }
     if policy is not None:
         entry["policy"] = policy
@@ -55,8 +61,9 @@ def record_failure_trace_event(
     if error is not None:
         entry["error"] = error
 
-    with open(FAILURE_TRACE_PATH, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry) + "\n")
+    with FAILURE_TRACE_LOCK:
+        with open(FAILURE_TRACE_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry) + "\n")
 
 
 class ResearchAgent:
@@ -112,6 +119,7 @@ class ResearchAgent:
                     "Controlled failure at Step 7 for sandbox '%s'. Applying 'fresh' recovery policy...",
                     self.sandbox_name,
                 )
+                is_live = not self.simulate_offline
                 # 1. Record the failed step in failure trace
                 record_failure_trace_event(
                     event="step_failure",
@@ -120,6 +128,7 @@ class ResearchAgent:
                     total_steps=10,
                     error=str(step_exc),
                     details="Verification probe failed at Step 7 of 10 inside guest",
+                    live_execution=is_live,
                 )
 
                 # 2. Record policy_applied event
@@ -134,6 +143,7 @@ class ResearchAgent:
                         "cleared corrupted execution state, and provisioned a pristine replacement sandbox "
                         "to guarantee deterministic artifact generation from Step 1."
                     ),
+                    live_execution=is_live,
                 )
 
                 # 3. Clean up the failed guest
@@ -170,6 +180,7 @@ class ResearchAgent:
                     total_steps=10,
                     policy="fresh",
                     details=f"Pristine sandbox '{new_sandbox_name}' restarted from Step 1 and successfully generated verified artifact.",
+                    live_execution=is_live,
                 )
 
                 return result
@@ -206,9 +217,13 @@ class ResearchAgent:
                 if not (url.startswith("http://") or url.startswith("https://")):
                     raise ValueError(f"Prohibited URL scheme: {url}")
 
-            # Step 4: Initialize browser connection inside guest
-            logger.info("[Step 4/10] Initializing sandboxed browser connection...")
+            # Step 4: Initialize research retrieval channel inside guest
+            logger.info("[Step 4/10] Initializing sandboxed research retrieval channel...")
             browser_conn = self.sandbox.get_browser_connection()
+            if browser_conn:
+                logger.info("Sandboxed CDP browser connection active: %s", getattr(browser_conn, "url", "active"))
+            else:
+                logger.info("Using compliant in-guest command execution for evidence extraction.")
 
             # Step 5: Fetch bounded evidence inside guest
             logger.info("[Step 5/10] Fetching research evidence inside guest...")
