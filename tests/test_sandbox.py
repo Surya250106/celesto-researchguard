@@ -45,6 +45,40 @@ def test_missing_credentials_fails_clearly():
             os.environ["CELESTO_API_KEY"] = old_key
 
 
+def test_placeholder_credentials_fails_clearly():
+    """Verify live cloud sandbox creation with placeholder API key raises CelestoCredentialsMissingError."""
+    old_key = os.environ.get("CELESTO_API_KEY")
+    os.environ["CELESTO_API_KEY"] = "your_celesto_api_key_here"
+    try:
+        manager = SandboxManager(
+            sandbox_name="sbx-testcreds02",
+            provider="cloud",
+            simulate_offline=False,
+        )
+        with pytest.raises(CelestoCredentialsMissingError) as exc_info:
+            manager.start()
+        assert "placeholder" in str(exc_info.value).lower() or "CELESTO_API_KEY" in str(exc_info.value)
+    finally:
+        if old_key is not None:
+            os.environ["CELESTO_API_KEY"] = old_key
+        else:
+            os.environ.pop("CELESTO_API_KEY", None)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows-specific local provider check")
+def test_local_provider_on_windows_fails_clearly():
+    """Verify local provider raises CelestoError on Windows."""
+    from celesto.exceptions import CelestoError
+    manager = SandboxManager(
+        sandbox_name="sbx-testlocal01",
+        provider="local",
+        simulate_offline=False,
+    )
+    with pytest.raises(CelestoError) as exc_info:
+        manager.start()
+    assert "not supported directly on Windows hosts" in str(exc_info.value)
+
+
 def test_sandbox_manager_offline_lifecycle():
     """Verify start, command execution, and cleanup in offline mode."""
     sbx_name = generate_unique_sandbox_name()
